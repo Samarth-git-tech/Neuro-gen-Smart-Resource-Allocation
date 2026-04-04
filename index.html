@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Digi-Sahaay | Volunteer Coordination</title>
+
+  <!-- ✅ Google Font: Nunito — friendly, readable, not generic -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lato:wght@400;700&display=swap" rel="stylesheet"/>
+
+  <!-- ✅ Link to external stylesheet -->
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════
+       🟢 NAV BAR — visible on all pages except landing
+       ════════════════════════════════════════════ -->
+  <nav class="navbar hidden" id="navbar">
+    <div class="nav-brand">🌿 Digi-Sahaay</div>
+    <div class="nav-steps" id="navSteps">
+      <!-- Step indicators injected by JS -->
+    </div>
+    <button class="btn-outline-sm" onclick="goToPage('landing')">Home</button>
+  </nav>
+
+  <!-- ════════════════════════════════════════════
+       📄 PAGE 0 — LANDING / WELCOME
+       ════════════════════════════════════════════ -->
+  <section class="page active" id="page-landing">
+    <div class="landing-bg">
+      <div class="landing-card">
+        <!-- Brand logo / icon -->
+        <div class="brand-icon">🤝</div>
+
+        <!-- ✅ Main headline as required -->
+        <h1 class="welcome-headline">Welcome to <span class="brand">Digi-Sahaay</span></h1>
+        <p class="welcome-sub">
+          Smart Volunteer Coordination &amp; Community Resource Matching for NGOs &amp; Local Groups
+        </p>
+
+        <!-- Feature pills -->
+        <div class="feature-pills">
+          <span class="pill green">📍 Location-Based</span>
+          <span class="pill blue">🧑‍🤝‍🧑 Volunteer Matching</span>
+          <span class="pill teal">📊 Live Dashboards</span>
+        </div>
+
+        <!-- CTA buttons -->
+        <div class="cta-group">
+          <button class="btn-primary" onclick="goToPage('location')">Get Started →</button>
+          <button class="btn-outline" onclick="goToPage('dashboard')">View Dashboard</button>
+        </div>
+
+        <p class="landing-note">No login required to explore · Built for social impact</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       📄 PAGE 1 — LOCATION SELECTION
+       ════════════════════════════════════════════ -->
+  <section class="page" id="page-location">
+    <div class="page-wrapper">
+      <div class="page-card">
+        <div class="step-badge">Step 1 of 5</div>
+        <h2>📍 Select Your Location</h2>
+        <p class="step-desc">Everything is filtered by your area. Pick your city or district to begin.</p>
+
+        <!-- ✅ City dropdown — options can be loaded from backend API -->
+        <div class="form-group">
+          <label for="citySelect">City / District</label>
+          <select id="citySelect" class="input-field">
+            <option value="">— Choose City —</option>
+            <option value="prayagraj">Prayagraj</option>
+            <option value="lucknow">Lucknow</option>
+            <option value="varanasi">Varanasi</option>
+            <option value="kanpur">Kanpur</option>
+            <option value="agra">Agra</option>
+            <!-- Backend: populate dynamically via fetchCities() in app.js -->
+          </select>
+        </div>
+
+        <!-- ✅ Area / Ward input -->
+        <div class="form-group">
+          <label for="areaInput">Area / Ward (optional)</label>
+          <input type="text" id="areaInput" class="input-field" placeholder="e.g. Civil Lines, Naini..."/>
+        </div>
+
+        <!-- Map placeholder — connect to Leaflet.js or Google Maps -->
+        <div class="map-placeholder">
+          🗺️ Interactive map will load here
+          <span class="map-note">(Connect Leaflet.js or Google Maps API)</span>
+        </div>
+
+        <button class="btn-primary full-width" onclick="handleLocation()">Continue →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       📄 PAGE 2 — GROUP TYPE SELECTION
+       ════════════════════════════════════════════ -->
+  <section class="page" id="page-grouptype">
+    <div class="page-wrapper">
+      <div class="page-card">
+        <div class="step-badge">Step 2 of 5</div>
+        <h2>🏷️ Choose Group Type</h2>
+        <p class="step-desc">What kind of social impact does your group focus on?</p>
+
+        <!-- ✅ Category cards — selectedGroupType stored in appState -->
+        <div class="category-grid" id="categoryGrid">
+          <div class="category-card" data-type="health" onclick="selectCategory(this)">
+            <span class="cat-icon">🏥</span>
+            <span class="cat-label">Health</span>
+          </div>
+          <div class="category-card" data-type="food" onclick="selectCategory(this)">
+            <span class="cat-icon">🍱</span>
+            <span class="cat-label">Food Relief</span>
+          </div>
+          <div class="category-card" data-type="education" onclick="selectCategory(this)">
+            <span class="cat-icon">📚</span>
+            <span class="cat-label">Education</span>
+          </div>
+          <div class="category-card" data-type="environment" onclick="selectCategory(this)">
+            <span class="cat-icon">🌿</span>
+            <span class="cat-label">Environment</span>
+          </div>
+          <div class="category-card" data-type="justice" onclick="selectCategory(this)">
+            <span class="cat-icon">⚖️</span>
+            <span class="cat-label">Social Justice</span>
+          </div>
+          <div class="category-card" data-type="other" onclick="selectCategory(this)">
+            <span class="cat-icon">🤲</span>
+            <span class="cat-label">Other</span>
+          </div>
+        </div>
+
+        <div class="nav-btns">
+          <button class="btn-outline" onclick="goToPage('location')">← Back</button>
+          <button class="btn-primary" onclick="handleGroupType()">Continue →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       📄 PAGE 3 — GROUP REGISTRATION
+       ════════════════════════════════════════════ -->
+  <section class="page" id="page-register">
+    <div class="page-wrapper">
+      <div class="page-card">
+        <div class="step-badge">Step 3 of 5</div>
+        <h2>📋 Register Your Group</h2>
+        <p class="step-desc">Basic details about your organisation or group.</p>
+
+        <form id="groupForm" onsubmit="handleGroupRegister(event)">
+
+          <div class="form-row">
+            <!-- Group Name -->
+            <div class="form-group">
+              <label for="groupName">Group Name *</label>
+              <input type="text" id="groupName" class="input-field" placeholder="e.g. Prayagraj Seva Samiti" required/>
+            </div>
+
+            <!-- Admin Name -->
+            <div class="form-group">
+              <label for="adminName">Admin / Leader Name *</label>
+              <input type="text" id="adminName" class="input-field" placeholder="Full name" required/>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <!-- Contact -->
+            <div class="form-group">
+              <label for="contactPhone">Phone Number *</label>
+              <input type="tel" id="contactPhone" class="input-field" placeholder="+91 XXXXXXXXXX" required/>
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+              <label for="contactEmail">Email</label>
+              <input type="email" id="contactEmail" class="input-field" placeholder="group@email.com"/>
+            </div>
+          </div>
+
+          <!-- ✅ Auto-filled from Step 1 — read-only -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="autoLocation">Location (auto-filled)</label>
+              <input type="text" id="autoLocation" class="input-field readonly" readonly/>
+            </div>
+            <div class="form-group">
+              <label for="autoType">Group Type (auto-filled)</label>
+              <input type="text" id="autoType" class="input-field readonly" readonly/>
+            </div>
+          </div>
+
+          <div class="nav-btns">
+            <button type="button" class="btn-outline" onclick="goToPage('grouptype')">← Back</button>
+            <!-- ✅ Backend: POST /api/groups on submit — see app.js registerGroup() -->
+            <button type="submit" class="btn-primary">Register Group →</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       📄 PAGE 4 — MEMBER / VOLUNTEER REGISTRATION
+       ════════════════════════════════════════════ -->
+  <section class="page" id="page-members">
+    <div class="page-wrapper">
+      <div class="page-card wide">
+        <div class="step-badge">Step 4 of 5</div>
+        <h2>🙋 Add Members &amp; Volunteers</h2>
+        <p class="step-desc">Add people to your group. You can add more later from the dashboard.</p>
+
+        <form id="memberForm" onsubmit="handleAddMember(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="memName">Full Name *</label>
+              <input type="text" id="memName" class="input-field" placeholder="Name" required/>
+            </div>
+            <div class="form-group">
+              <label for="memRole">Role *</label>
+              <select id="memRole" class="input-field" required>
+                <option value="">— Select Role —</option>
+                <option value="admin">Admin</option>
+                <option value="member">Member</option>
+                <option value="volunteer">Volunteer</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="memSkills">Skills</label>
+              <input type="text" id="memSkills" class="input-field" placeholder="e.g. First Aid, Teaching, Driving"/>
+            </div>
+            <div class="form-group">
+              <label for="memAvail">Availability</label>
+              <select id="memAvail" class="input-field">
+                <option value="fulltime">Full-time</option>
+                <option value="weekends">Weekends Only</option>
+                <option value="evenings">Evenings</option>
+                <option value="ondemand">On-demand</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="memContact">Contact Number *</label>
+            <input type="tel" id="memContact" class="input-field" placeholder="+91 XXXXXXXXXX" required/>
+          </div>
+
+          <!-- ✅ Backend: POST /api/members on submit — see app.js addMember() -->
+          <button type="submit" class="btn-secondary full-width">+ Add Member</button>
+        </form>
+
+        <!-- ✅ Live member list — populated by JS, synced to backend -->
+        <div class="member-list" id="memberList">
+          <p class="empty-note">No members added yet. Use the form above ↑</p>
+        </div>
+
+        <div class="nav-btns" style="margin-top:1.5rem">
+          <button class="btn-outline" onclick="goToPage('register')">← Back</button>
+          <button class="btn-primary" onclick="goToPage('dashboard')">Go to Dashboard →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       📄 PAGE 5 — GROUP DASHBOARD
+       ════════════════════════════════════════════ -->
+  <section class="page" id="page-dashboard">
+    <div class="page-wrapper wide-page">
+
+      <div class="dashboard-header">
+        <div>
+          <h2 id="dashGroupName">Group Dashboard</h2>
+          <p id="dashMeta" class="step-desc">Location · Type</p>
+        </div>
+        <button class="btn-primary" onclick="goToPage('tasks')">+ Create Task</button>
+      </div>
+
+      <!-- ✅ STATS CARDS — values fetched from backend GET /api/groups/:id/stats -->
+      <div class="stats-row">
+        <div class="stat-card green">
+          <div class="stat-num" id="statMembers">0</div>
+          <div class="stat-label">Total Members</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-num" id="statTasks">0</div>
+          <div class="stat-label">Active Tasks</div>
+        </div>
+        <div class="stat-card teal">
+          <div class="stat-num" id="statVolunteers">0</div>
+          <div class="stat-label">Volunteers</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-num" id="statDone">0</div>
+          <div class="stat-label">Tasks Completed</div>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <!-- Member List Panel -->
+        <div class="dash-panel">
+          <div class="panel-header">
+            <h3>👥 Members</h3>
+            <button class="btn-outline-sm" onclick="goToPage('members')">+ Add</button>
+          </div>
+          <div id="dashMemberList" class="dash-list">
+            <p class="empty-note">No members yet.</p>
+          </div>
+        </div>
+
+        <!-- Active Tasks Panel -->
+        <div class="dash-panel">
+          <div class="panel-header">
+            <h3>📌 Active Tasks</h3>
+            <button class="btn-outline-sm" onclick="goToPage('tasks')">+ New</button>
+          </div>
+          <div id="dashTaskList" class="dash-list">
+            <p class="empty-note">No tasks yet. Create your first task!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Needs / Urgency Panel -->
+      <div class="dash-panel full-panel">
+        <div class="panel-header">
+          <h3>🚨 Community Needs — Urgency Map</h3>
+          <span class="badge green">Live</span>
+        </div>
+        <div class="needs-grid" id="needsGrid">
+          <!-- ✅ Backend: GET /api/needs?location=... populates this -->
+          <div class="need-card high">
+            <span class="urgency-dot"></span>
+            <div>
+              <strong>Food Distribution</strong>
+              <p>Civil Lines Ward · 42 families affected</p>
+            </div>
+            <span class="urgency-label">HIGH</span>
+          </div>
+          <div class="need-card medium">
+            <span class="urgency-dot"></span>
+            <div>
+              <strong>Medical Camp</strong>
+              <p>Naini Area · 18 requests pending</p>
+            </div>
+            <span class="urgency-label">MED</span>
+          </div>
+          <div class="need-card low">
+            <span class="urgency-dot"></span>
+            <div>
+              <strong>Literacy Drive</strong>
+              <p>George Town · Ongoing</p>
+            </div>
+            <span class="urgency-label">LOW</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       📄 PAGE 6 — TASK & COORDINATION INTERFACE
+       ════════════════════════════════════════════ -->
+  <section class="page" id="page-tasks">
+    <div class="page-wrapper">
+      <div class="page-card wide">
+        <div class="step-badge">Task Management</div>
+        <h2>📋 Create &amp; Assign Task</h2>
+        <p class="step-desc">Define a task and match it with available volunteers.</p>
+
+        <form id="taskForm" onsubmit="handleCreateTask(event)">
+          <div class="form-group">
+            <label for="taskTitle">Task Title *</label>
+            <input type="text" id="taskTitle" class="input-field" placeholder="e.g. Food distribution at Civil Lines" required/>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="taskCategory">Category *</label>
+              <select id="taskCategory" class="input-field" required>
+                <option value="">— Select —</option>
+                <option value="health">Health</option>
+                <option value="food">Food Relief</option>
+                <option value="education">Education</option>
+                <option value="environment">Environment</option>
+                <option value="logistics">Logistics</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="taskPriority">Priority *</label>
+              <select id="taskPriority" class="input-field" required>
+                <option value="high">🔴 High</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="low">🟢 Low</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="taskDate">Due Date</label>
+              <input type="date" id="taskDate" class="input-field"/>
+            </div>
+            <div class="form-group">
+              <label for="taskVolunteers">Volunteers Needed</label>
+              <input type="number" id="taskVolunteers" class="input-field" min="1" placeholder="e.g. 5"/>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="taskDesc">Description</label>
+            <textarea id="taskDesc" class="input-field" rows="3" placeholder="Describe the task, location, requirements..."></textarea>
+          </div>
+
+          <!-- Volunteer Assignment -->
+          <div class="assign-section">
+            <h4>🔗 Assign Volunteers</h4>
+            <div id="volunteerMatchList" class="volunteer-chips">
+              <!-- ✅ Backend: GET /api/volunteers?skill=...&available=true populates this -->
+              <div class="vol-chip" onclick="toggleAssign(this)">Rahul K. · First Aid</div>
+              <div class="vol-chip" onclick="toggleAssign(this)">Priya S. · Teaching</div>
+              <div class="vol-chip" onclick="toggleAssign(this)">Amit V. · Driving</div>
+              <div class="vol-chip" onclick="toggleAssign(this)">Sunita R. · Cooking</div>
+            </div>
+          </div>
+
+          <div class="nav-btns">
+            <button type="button" class="btn-outline" onclick="goToPage('dashboard')">← Dashboard</button>
+            <!-- ✅ Backend: POST /api/tasks — see app.js createTask() -->
+            <button type="submit" class="btn-primary">Create &amp; Assign Task ✓</button>
+          </div>
+        </form>
+
+        <!-- Task List Below Form -->
+        <div class="task-list-section">
+          <h3>📌 All Tasks</h3>
+          <div id="allTasksList">
+            <p class="empty-note">No tasks created yet.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       ✅ SUCCESS TOAST NOTIFICATION
+       ════════════════════════════════════════════ -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ✅ Link to external JS file -->
+  <script src="app.js"></script>
+</body>
+</html>
