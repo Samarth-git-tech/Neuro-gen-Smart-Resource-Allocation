@@ -13,15 +13,17 @@ from backend.app.db.database import Base
 # In Python, we use an Object-Relational Mapper (ORM), which translates Python classes 
 # directly into actual database tables automatically!
 
+# In your NGO Model (models.py)
 class NGO(Base):
-    # This acts like a schema definition. It creates a table named 'ngos'.
     __tablename__ = "ngos"
 
-    # 'id' is like your unique array index, incremented automatically by the DB engine.
-    id = Column(Integer, primary_key=True, index=True) 
-    name = Column(String, index=True)
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
     location = Column(String)
     sector = Column(String) # For example: Food, Health, Education
+    admin_name = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    email = Column(String, nullable=True) 
 
 class Volunteer(Base):
     __tablename__ = "volunteers"

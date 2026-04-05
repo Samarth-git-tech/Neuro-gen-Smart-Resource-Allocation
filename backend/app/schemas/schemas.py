@@ -13,6 +13,9 @@ class NGOBase(BaseModel):
     name: str
     location: str
     sector: str
+    admin_name: str
+    phone: str
+    email: str
 
 # Schema representing incoming data for registration (Creation)
 class NGOCreate(NGOBase):

@@ -18,7 +18,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # This allows your frontend to talk to the backend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,6 +29,9 @@ class NGOCreate(BaseModel):
     name: str
     location: str
     sector: str
+    admin_name: str
+    phone: str
+    email: str
 
 # --- ROUTES ---
 
@@ -39,7 +42,7 @@ def home():
 @app.post("/register-ngo")
 def register_ngo(ngo: NGOCreate, db: Session = Depends(database.get_db)):
     # Bilkul malloc() karke struct bharne jaisa hai
-    new_ngo = models.NGO(name=ngo.name, location=ngo.location, sector=ngo.sector)
+    new_ngo = models.NGO(name=ngo.name, location=ngo.location, sector=ngo.sector, admin_name=ngo.admin_name, phone=ngo.phone, email=ngo.email)
     db.add(new_ngo)
     db.commit()
     db.refresh(new_ngo)

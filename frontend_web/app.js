@@ -9,7 +9,8 @@
    🔧 CONFIG — set your backend URL here
    ───────────────────────────────────────────────── */
 const CONFIG = {
-  BASE_URL: "http://localhost:5000/api",  // ✅ Change to your server URL
+  // BASE_URL: "http://localhost:5000/api",  <-- Change this
+  BASE_URL: "http://127.0.0.1:8000",         // <-- To your actual FastAPI URL
   HEADERS: { "Content-Type": "application/json" }
 };
 
@@ -55,9 +56,9 @@ function goToPage(name) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 
   // Run page-specific setup
-  if (name === "register")  prefillRegisterForm();
+  if (name === "register") prefillRegisterForm();
   if (name === "dashboard") loadDashboard();
-  if (name === "members")   renderMemberList();
+  if (name === "members") renderMemberList();
 }
 
 /* ─────────────────────────────────────────────────
@@ -67,12 +68,12 @@ const PAGE_ORDER = ["location", "grouptype", "register", "members", "dashboard",
 
 function updateNavSteps(currentPage) {
   const container = document.getElementById("navSteps");
-  const labels    = ["Location", "Group Type", "Register", "Members", "Dashboard", "Tasks"];
+  const labels = ["Location", "Group Type", "Register", "Members", "Dashboard", "Tasks"];
   const currentIdx = PAGE_ORDER.indexOf(currentPage);
 
   container.innerHTML = PAGE_ORDER.map((page, i) => {
     let cls = "";
-    if (i < currentIdx)  cls = "done";
+    if (i < currentIdx) cls = "done";
     if (i === currentIdx) cls = "active";
     return `<span class="nav-step ${cls}">${labels[i]}</span>`;
   }).join("");
@@ -155,39 +156,48 @@ function prefillRegisterForm() {
  * 🔌 Backend: POST /api/groups
  */
 async function handleGroupRegister(event) {
-  event.preventDefault();  // prevent default HTML form submission
+  event.preventDefault(); // Stop the page from refreshing
 
-  // Collect form data
+  // 1. Collect data from the HTML form
   const payload = {
-    name:      document.getElementById("groupName").value.trim(),
-    admin:     document.getElementById("adminName").value.trim(),
-    phone:     document.getElementById("contactPhone").value.trim(),
-    email:     document.getElementById("contactEmail").value.trim(),
-    city:      appState.location?.city,
-    area:      appState.location?.area,
-    groupType: appState.groupType
+    name: document.getElementById("groupName").value.trim(),
+    location: appState.location?.city || "Unknown",
+    sector: appState.groupType || "General",
+    admin_name: document.getElementById("adminName").value.trim(),
+    phone: document.getElementById("contactPhone").value.trim(),
+    email: document.getElementById("contactEmail").value.trim()
   };
 
-  // ✅ Save to local state immediately (optimistic)
-  appState.group = payload;
+  console.log("Sending to Backend:", payload); // For debugging
+  console.log("FINAL PAYLOAD:", payload);
 
-  /* 🔌 BACKEND — uncomment to connect:
   try {
-    const res = await fetch(`${CONFIG.BASE_URL}/groups`, {
+    // 2. Send the "Call" to your FastAPI server
+    const res = await fetch(`${CONFIG.BASE_URL}/register-ngo`, {
       method: "POST",
       headers: CONFIG.HEADERS,
       body: JSON.stringify(payload)
     });
-    const data = await res.json();
-    appState.group = data;           // store backend response (includes ID)
-  } catch (err) {
-    showToast("❌ Registration failed. Check your connection.");
-    return;
-  }
-  */
 
-  showToast("✅ Group registered successfully!");
-  goToPage("members");
+    // res.json() ke baad check karo data kaisa dikh raha hai
+    if (res.ok) {
+      const responseData = await res.json();
+      console.log("Backend Response:", responseData); // Terminal check ke liye
+
+      // Agar tumhare FastAPI response mein 'data' key hai, toh aise likho:
+      appState.group = responseData.data || responseData;
+
+      showToast("✅ Registered!");
+      goToPage("members");
+    } else {
+      const errorData = await res.json();
+      showToast("❌ Validation Error: Check your fields!");
+      console.error("Backend said:", errorData);
+    }
+  } catch (err) {
+    showToast("❌ Connection Failed! Is the Python server running?");
+    console.error("Fetch error:", err);
+  }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -202,12 +212,12 @@ async function handleAddMember(event) {
   event.preventDefault();
 
   const member = {
-    id:           Date.now(),   // temporary ID; backend will assign real ID
-    name:         document.getElementById("memName").value.trim(),
-    role:         document.getElementById("memRole").value,
-    skills:       document.getElementById("memSkills").value.trim(),
+    id: Date.now(),   // temporary ID; backend will assign real ID
+    name: document.getElementById("memName").value.trim(),
+    role: document.getElementById("memRole").value,
+    skills: document.getElementById("memSkills").value.trim(),
     availability: document.getElementById("memAvail").value,
-    contact:      document.getElementById("memContact").value.trim()
+    contact: document.getElementById("memContact").value.trim()
   };
 
   // ✅ Add to local state
@@ -263,8 +273,8 @@ function renderMemberList() {
 async function loadDashboard() {
   // ─── Group Header ───
   const grp = appState.group;
-  document.getElementById("dashGroupName").textContent =
-    grp?.name || "Your Group Dashboard";
+  const groupName = grp?.name || "NGO"; // Agar name nahi mila toh "NGO" dikhayega
+  document.getElementById("dashGroupName").textContent = groupName + " Dashboard";
   document.getElementById("dashMeta").textContent =
     `${capitalize(grp?.city || "—")} · ${capitalize(grp?.groupType || "—")}`;
 
@@ -294,12 +304,12 @@ async function loadDashboard() {
  */
 function updateStats() {
   const volunteers = appState.members.filter(m => m.role === "volunteer").length;
-  const done       = appState.tasks.filter(t => t.status === "done").length;
+  const done = appState.tasks.filter(t => t.status === "done").length;
 
-  document.getElementById("statMembers").textContent    = appState.members.length;
-  document.getElementById("statTasks").textContent      = appState.tasks.length;
+  document.getElementById("statMembers").textContent = appState.members.length;
+  document.getElementById("statTasks").textContent = appState.tasks.length;
   document.getElementById("statVolunteers").textContent = volunteers;
-  document.getElementById("statDone").textContent       = done;
+  document.getElementById("statDone").textContent = done;
 }
 
 /**
@@ -354,41 +364,46 @@ function toggleAssign(el) {
 async function handleCreateTask(event) {
   event.preventDefault();
 
-  // Collect assigned volunteer names
-  const assigned = [...document.querySelectorAll(".vol-chip.assigned")]
-    .map(el => el.textContent.trim());
+  try {
+    // Form se values uthana
+    const title = document.getElementById("taskTitle").value.trim();
+    const category = document.getElementById("taskCategory").value;
+    const priority = document.getElementById("taskPriority").value;
 
-  const task = {
-    id:         Date.now(),
-    title:      document.getElementById("taskTitle").value.trim(),
-    category:   document.getElementById("taskCategory").value,
-    priority:   document.getElementById("taskPriority").value,
-    dueDate:    document.getElementById("taskDate").value,
-    volunteers: document.getElementById("taskVolunteers").value,
-    desc:       document.getElementById("taskDesc").value.trim(),
-    assigned,
-    status:     "active",
-    createdAt:  new Date().toLocaleDateString()
-  };
+    if (!title) {
+      showToast("⚠️ Please enter a Task Title");
+      return;
+    }
 
-  // ✅ Add to local state
-  appState.tasks.push(task);
+    // Selected volunteers nikalna
+    const assigned = [...document.querySelectorAll(".vol-chip.assigned")]
+      .map(el => el.textContent.trim());
 
-  /* 🔌 BACKEND — uncomment to connect:
-  await fetch(`${CONFIG.BASE_URL}/tasks`, {
-    method: "POST",
-    headers: CONFIG.HEADERS,
-    body: JSON.stringify({ ...task, groupId: appState.group?.id })
-  });
-  */
+    const newTask = {
+      id: Date.now(),
+      title: title,
+      category: category,
+      priority: priority,
+      assigned: assigned,
+      status: "active"
+    };
 
-  // Reset assigned chips
-  document.querySelectorAll(".vol-chip.assigned").forEach(c => c.classList.remove("assigned"));
+    // Local state update
+    appState.tasks.push(newTask);
 
-  document.getElementById("taskForm").reset();
-  updateStats();
-  renderAllTasksList();
-  showToast(`✅ Task "${task.title}" created!`);
+    // UI Update
+    renderAllTasksList();
+    updateStats();
+
+    // Form reset
+    document.getElementById("taskForm").reset();
+    document.querySelectorAll(".vol-chip.assigned").forEach(c => c.classList.remove("assigned"));
+
+    showToast(`✅ Task "${title}" created!`);
+  } catch (error) {
+    console.error("Task Creation Error:", error);
+    showToast("❌ Error creating task. Check Console.");
+  }
 }
 
 /**
