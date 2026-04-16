@@ -1,0 +1,540 @@
+================================================================================
+  DIGI-SAHAAY REACT FRONTEND — FULL CHANGES REPORT
+  Date: 2026-04-12
+================================================================================
+
+✅ CONFIRMATION: ALL LOGIC WAS REBUILT FROM SCRATCH.
+   - NO code was copied from oldfrontend/app.js
+   - Old JS used: global appState, document.getElementById(), goToPage(), 
+     manual DOM manipulation, direct backend API calls with fetch()
+   - New React uses: useState, useEffect, useContext, React Router, 
+     Firebase SDK methods, component-based architecture
+   - Old frontend design (CSS classes, colors, layout) was used ONLY as 
+     visual reference to keep the same look and feel
+
+================================================================================
+  FILE-BY-FILE BREAKDOWN (15 files created/modified)
+================================================================================
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 1: frontend-rjs/index.html
+ACTION: MODIFIED
+────────────────────────────────────────────────────────────────────────────────
+WHAT CHANGED: Added Google Fonts (Nunito + Lato), proper page title, meta desc
+
+KEY CODE:
+  <title>Digi-Sahaay | Role-Based Coordination</title>
+  <meta name="description" content="Digi-Sahaay — Smart Volunteer Coordination..." />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lato:wght@400;700&display=swap" rel="stylesheet" />
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 2: frontend-rjs/src/index.css
+ACTION: COMPLETELY REWRITTEN
+────────────────────────────────────────────────────────────────────────────────
+WHAT CHANGED: Replaced Vite default CSS with Digi-Sahaay design system.
+             Same CSS variables and class names as old style.css but 
+             restructured for React (added .fade-in, .error-message, 
+             .success-message, .loading-spinner, .btn-danger, .btn-primary:disabled)
+
+KEY CODE (new additions not in old CSS):
+  .error-message {
+    background: var(--red-light);
+    color: var(--red);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    animation: fadeIn 0.2s ease;
+  }
+
+  .loading-spinner {
+    width: 18px; height: 18px;
+    border: 2.5px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin .6s linear infinite;
+  }
+
+  .btn-primary:disabled {
+    background: var(--gray-300);
+    cursor: not-allowed;
+  }
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 3: frontend-rjs/src/firebase.js
+ACTION: UNCHANGED (already existed)
+────────────────────────────────────────────────────────────────────────────────
+  Exports: auth (Firebase Auth instance)
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 4: frontend-rjs/src/services/auth.js
+ACTION: CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: All Firebase Authentication logic lives here.
+         OLD app.js used fetch() to POST to backend /api/login — COMPLETELY DIFFERENT
+
+KEY CODE:
+
+  // REGISTER — uses Firebase SDK, NOT old backend API
+  export async function registerUser(email, password) {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
+  }
+
+  // LOGIN — uses Firebase SDK, NOT old backend API
+  export async function loginUser(email, password) {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
+  }
+
+  // TOKEN — for future backend verification
+  export async function getIdToken() {
+    const user = auth.currentUser;
+    if (!user) throw new Error("No user is currently signed in.");
+    return await user.getIdToken();
+  }
+
+  // ERROR PARSING — converts Firebase error codes to user-friendly messages
+  export function getAuthErrorMessage(errorCode) {
+    const errorMap = {
+      "auth/email-already-in-use": "This email is already registered.",
+      "auth/invalid-email": "Please enter a valid email address.",
+      "auth/weak-password": "Password must be at least 6 characters.",
+      "auth/wrong-password": "Incorrect password.",
+      "auth/invalid-credential": "Invalid email or password.",
+      // ... etc
+    };
+    return errorMap[errorCode] || "An unexpected error occurred.";
+  }
+
+  COMPARISON WITH OLD app.js:
+  ┌─────────────────────────────────────┬─────────────────────────────────────┐
+  │ OLD app.js                          │ NEW services/auth.js                │
+  ├─────────────────────────────────────┼─────────────────────────────────────┤
+  │ fetch(`${API}/api/login`, {         │ signInWithEmailAndPassword(auth,    │
+  │   method: 'POST',                   │   email, password)                  │
+  │   body: JSON.stringify({email,pwd}) │                                     │
+  │ })                                  │                                     │
+  ├─────────────────────────────────────┼─────────────────────────────────────┤
+  │ No token generation                 │ user.getIdToken() on every login    │
+  ├─────────────────────────────────────┼─────────────────────────────────────┤
+  │ Error: generic alert()              │ Error: mapped Firebase error codes  │
+  └─────────────────────────────────────┴─────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 5: frontend-rjs/src/services/api.js
+ACTION: CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: Stub for future FastAPI backend calls. Auto-attaches Firebase token.
+
+KEY CODE:
+  export async function apiRequest(endpoint, options = {}) {
+    const { getIdToken } = await import("./auth.js");
+    const token = await getIdToken();
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,  // Firebase token for backend
+      },
+    });
+    return response.json();
+  }
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 6: frontend-rjs/src/context/AuthContext.jsx
+ACTION: CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: Replaces old global appState.currentUser with React Context.
+         OLD used: appState = { user: null, role: '', token: '' }
+         NEW uses: React Context + onAuthStateChanged listener
+
+KEY CODE:
+  export function AuthProvider({ children }) {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      // Firebase listener — fires when auth state changes
+      const unsubscribe = onAuthChange(async (firebaseUser) => {
+        if (firebaseUser) {
+          const token = await firebaseUser.getIdToken();
+          console.log("🔑 Firebase ID Token:", token);
+          setUser(firebaseUser);
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      });
+      return () => unsubscribe();
+    }, []);
+
+    // Exposed via useAuth() hook
+    const value = { user, loading, logout, refreshToken, isAuthenticated: !!user };
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  }
+
+  export function useAuth() {
+    return useContext(AuthContext);
+  }
+
+  COMPARISON WITH OLD:
+  ┌─────────────────────────────────────┬─────────────────────────────────────┐
+  │ OLD app.js                          │ NEW AuthContext.jsx                 │
+  ├─────────────────────────────────────┼─────────────────────────────────────┤
+  │ let appState = {                    │ const [user, setUser] = useState()  │
+  │   currentUser: null,                │ onAuthStateChanged(auth, callback)  │
+  │   role: '', token: ''               │ useAuth() hook in any component     │
+  │ }                                   │                                     │
+  └─────────────────────────────────────┴─────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 7: frontend-rjs/src/utils/helpers.js
+ACTION: CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: Shared constants (roles, categories, cities) and utility functions.
+         OLD had these hardcoded inline in HTML. NEW exports reusable objects.
+
+KEY CODE:
+  export const ROLES = {
+    admin:     { icon: "🛡️", label: "Admin", desc: "...", badge: "Full Access" },
+    volunteer: { icon: "🙋", label: "Volunteer", desc: "...", badge: "Task + Score" },
+    helper:    { icon: "🔧", label: "Helper / Staff", desc: "...", badge: "Logistics Access" },
+  };
+
+  export const CATEGORIES = [
+    { type: "health", icon: "🏥", label: "Health" },
+    { type: "food",   icon: "🍱", label: "Food Relief" },
+    // ... 8 total
+  ];
+
+  export function getVolunteerLevel(score) {
+    if (score >= 500) return { level: "🌳 Mighty Oak", progress: 100 };
+    if (score >= 300) return { level: "🌲 Strong Pine", progress: ... };
+    // ...
+  }
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 8: frontend-rjs/src/components/Navbar.jsx
+ACTION: CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: Replaces old <nav> with onclick="goToPage()". Now auth-aware.
+         OLD: static HTML, manually shown/hidden via JS
+         NEW: React component, auto-shows user info when logged in
+
+KEY CODE:
+  export default function Navbar() {
+    const { user, isAuthenticated, logout } = useAuth();
+    return (
+      <nav className="navbar">
+        <Link to="/" className="nav-brand">🌿 Digi-Sahaay</Link>
+        <div className="nav-right">
+          {isAuthenticated ? (
+            <>
+              <div className="nav-user-chip">
+                <span>{roleInfo.icon}</span>
+                <span>{user.email?.split("@")[0]}</span>
+              </div>
+              <Link to="/dashboard" className="btn-outline-sm">Dashboard</Link>
+              <button className="btn-outline-sm" onClick={handleLogout}>Sign Out</button>
+            </>
+          ) : (
+            <>
+              <Link to="/" className="btn-outline-sm">Home</Link>
+              <Link to="/login" className="btn-outline-sm">Sign In</Link>
+            </>
+          )}
+        </div>
+      </nav>
+    );
+  }
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 9: frontend-rjs/src/components/Toast.jsx
+ACTION: CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: Reusable toast notification. OLD used a manual showToast() function
+         that did document.getElementById('toast').
+
+KEY CODE:
+  export function useToast() {
+    const [toast, setToast] = useState({ message: "", type: "success" });
+    const showToast = (message, type = "success", duration = 3000) => {
+      setToast({ message, type });
+      setTimeout(() => setToast({ message: "", type: "success" }), duration);
+    };
+    return { toast, showToast, hideToast };
+  }
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 10: frontend-rjs/src/components/ProtectedRoute.jsx
+ACTION: CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: Wraps /dashboard route — redirects to /login if not authenticated.
+         OLD had no route protection at all.
+
+KEY CODE:
+  export default function ProtectedRoute({ children }) {
+    const { isAuthenticated, loading } = useAuth();
+    if (loading) return <LoadingSpinner />;
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    return children;
+  }
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 11: frontend-rjs/src/pages/LandingPage.jsx
+ACTION: CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: Same visual design as old page-landing section.
+         OLD: onclick="goToPage('login')"
+         NEW: <Link to="/login">
+
+KEY CODE:
+  <div className="cta-group">
+    {isAuthenticated ? (
+      <Link to="/dashboard">Go to Dashboard →</Link>
+    ) : (
+      <>
+        <Link to="/register" className="btn-primary">Get Started →</Link>
+        <Link to="/login" className="btn-outline">Sign In</Link>
+      </>
+    )}
+  </div>
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 12: frontend-rjs/src/pages/LoginPage.jsx
+ACTION: CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: Login with Firebase Auth. COMPLETELY different from old handleLogin().
+         OLD handleLogin() did: fetch(`${API}/api/login`, { body: {email, pwd, role} })
+         NEW handleLogin() does: loginUser(email, password) via Firebase SDK
+
+KEY CODE:
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    // Validation (NEW — old had none)
+    if (!email.trim()) { setError("Please enter your email."); return; }
+    if (!password.trim()) { setError("Please enter your password."); return; }
+
+    setLoading(true);
+    try {
+      const user = await loginUser(email.trim(), password);  // Firebase SDK
+
+      // Token generation (NEW — old never did this)
+      const token = await user.getIdToken();
+      console.log("🔑 Firebase ID Token:", token);
+
+      localStorage.setItem("userRole", selectedRole);
+      navigate("/dashboard");
+    } catch (err) {
+      const message = getAuthErrorMessage(err.code);  // Human-readable
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Role tabs use React state, not old switchLoginRole() DOM function
+  const [selectedRole, setSelectedRole] = useState("admin");
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 13: frontend-rjs/src/pages/RegisterPage.jsx
+ACTION: CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: 3-step registration with Firebase Auth.
+         OLD: handleGroupRegister() did fetch(`${API}/api/register`, {...})
+         NEW: registerUser(email, password) via Firebase SDK
+
+KEY CODE:
+  // Step state management (NEW — old used goToPage() for each step)
+  const [step, setStep] = useState(1);  // 1=Location, 2=Cause, 3=Form
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    // Input validation (NEW — old had minimal validation)
+    if (!selectedRole) { setError("Please select your role."); return; }
+    if (!formData.email.trim()) { setError("Please enter email."); return; }
+    if (formData.password.length < 6) { setError("Min 6 characters."); return; }
+
+    const user = await registerUser(formData.email, formData.password); // Firebase
+    const token = await user.getIdToken();
+    console.log("🔑 Firebase ID Token (new user):", token);
+    navigate("/dashboard");
+  };
+
+  // Category selection uses React state, not old selectCategory(this) DOM
+  const [selectedCategory, setSelectedCategory] = useState("");
+  // Renders from CATEGORIES array, not hardcoded HTML
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 14: frontend-rjs/src/pages/DashboardPage.jsx
+ACTION: CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: Routes to correct dashboard based on user role.
+         OLD: goDashboard() would show/hide sections via DOM
+         NEW: renders the correct React component
+
+KEY CODE:
+  export default function DashboardPage() {
+    const role = localStorage.getItem("userRole") || "volunteer";
+    switch (role) {
+      case "admin":     return <AdminDashboard />;
+      case "helper":    return <HelperDashboard />;
+      default:          return <VolunteerDashboard />;
+    }
+  }
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 15a: frontend-rjs/src/pages/dashboards/AdminDashboard.jsx
+FILE 15b: frontend-rjs/src/pages/dashboards/VolunteerDashboard.jsx
+FILE 15c: frontend-rjs/src/pages/dashboards/HelperDashboard.jsx
+ACTION: ALL CREATED NEW
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: Role-specific dashboards. Same visual layout as old HTML but built
+         with React components, props, and state.
+         OLD: innerHTML injection via JS for tables
+         NEW: .map() over state arrays to render JSX
+
+KEY CODE (Admin — member table example):
+  const [members] = useState([
+    { name: "Rahul Kumar", role: "volunteer", mobile: "...", skills: "First Aid" },
+  ]);
+
+  {members.map((m, i) => (
+    <tr key={i}>
+      <td>{m.name}</td>
+      <td><span className={`mem-role badge-${m.role}`}>{m.role}</span></td>
+      <td>{m.mobile}</td>
+      <td>{m.skills}</td>
+    </tr>
+  ))}
+
+KEY CODE (Volunteer — score + level):
+  const [score] = useState(175);
+  const levelInfo = getVolunteerLevel(score);  // From helpers.js
+
+  <div className="vol-score-num">{score}</div>
+  <div className="level-bar-fill" style={{ width: `${levelInfo.progress}%` }} />
+
+KEY CODE (Helper — supply tracker):
+  const [supplies] = useState([
+    { item: "Medical Kits", qty: 45, status: "adequate" },
+    { item: "First Aid Kits", qty: 3, status: "critical" },
+  ]);
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE 16: frontend-rjs/src/app.jsx
+ACTION: COMPLETELY REWRITTEN
+────────────────────────────────────────────────────────────────────────────────
+PURPOSE: Root component with routing and auth provider.
+         OLD app.jsx just had: <h1>Firebase Connected</h1>
+
+KEY CODE:
+  export default function App() {
+    return (
+      <BrowserRouter>
+        <AuthProvider>
+          <AppLayout />
+        </AuthProvider>
+      </BrowserRouter>
+    );
+  }
+
+  function AppLayout() {
+    return (
+      <>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute><DashboardPage /></ProtectedRoute>
+          } />
+        </Routes>
+      </>
+    );
+  }
+
+
+================================================================================
+  OLD FILES REMOVED (were empty/placeholder)
+================================================================================
+  - src/components/card.jsx      (unused placeholder)
+  - src/components/navbar.jsx    (replaced by Navbar.jsx)
+  - src/pages/dashboard.jsx      (replaced by DashboardPage.jsx)
+  - src/pages/input.jsx          (unused placeholder)
+  - src/pages/login.jsx          (replaced by LoginPage.jsx)
+  - src/pages/tasks.jsx          (unused placeholder)
+  - src/context/authcontext.jsx  (replaced by AuthContext.jsx)
+
+
+================================================================================
+  LOGIC COMPARISON: OLD vs NEW (PROOF OF NO COPYING)
+================================================================================
+
+  OLD app.js handleLogin():
+  ─────────────────────────
+    async function handleLogin() {
+      const email = document.getElementById('loginEmail').value;
+      const pwd   = document.getElementById('loginPassword').value;
+      const resp  = await fetch(`${API}/api/login`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({email, password: pwd, role: appState.loginRole})
+      });
+      const data = await resp.json();
+      appState.currentUser = data.user;
+      appState.token = data.token;
+      goDashboard();
+    }
+
+  NEW LoginPage.jsx handleLogin():
+  ─────────────────────────────────
+    const handleLogin = async (e) => {
+      e.preventDefault();
+      if (!email.trim()) { setError("..."); return; }
+      if (!password.trim()) { setError("..."); return; }
+      setLoading(true);
+      try {
+        const user = await loginUser(email, password);  // Firebase SDK
+        const token = await user.getIdToken();           // Firebase token
+        console.log("Token:", token);
+        localStorage.setItem("userRole", selectedRole);
+        navigate("/dashboard");                          // React Router
+      } catch (err) {
+        setError(getAuthErrorMessage(err.code));         // Mapped errors
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  DIFFERENCES:
+  ✗ No document.getElementById — uses React useState
+  ✗ No fetch() to backend — uses Firebase SDK directly
+  ✗ No appState global — uses React Context
+  ✗ No goDashboard() — uses React Router navigate()
+  ✓ Added input validation
+  ✓ Added loading state
+  ✓ Added human-readable error messages
+  ✓ Added Firebase ID token generation
+
+
+================================================================================
+  END OF REPORT
+================================================================================
