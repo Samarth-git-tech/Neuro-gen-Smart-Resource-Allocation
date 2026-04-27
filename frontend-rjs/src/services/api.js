@@ -1,6 +1,7 @@
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-const API_BASE_URL = "https://digi-sahaay-backend.onrender.com";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
 
 // Helper to wait for the auth state to initialize
 const getAuthUser = () => {
@@ -51,7 +52,7 @@ export async function fetchAllTasks() {
 /** Fetch tasks assigned to logged-in user */
 export async function fetchMyTasks(userId) {
   const all = await apiRequest("/api/tasks");
-  return all.filter((t) => t.assigned_to_id === userId); 
+  return all.filter((t) => t.assigned_to_id === userId);
 }
 
 /** Update task status */
@@ -73,7 +74,7 @@ export async function reassignTask(taskId) {
 
 /** Admin Action: Update Priority */
 export async function updateTaskPriority(taskId, priority) {
-  return apiRequest(`/api/tasks/${taskId}/priority`, { 
+  return apiRequest(`/api/tasks/${taskId}/priority`, {
     method: "PATCH",
     body: JSON.stringify({ priority })
   });
@@ -82,4 +83,17 @@ export async function updateTaskPriority(taskId, priority) {
 /** Admin Action: Force Assign specific user */
 export async function forceAssignUser(taskId, userId) {
   return apiRequest(`/api/tasks/${taskId}/force-assign/${userId}`, { method: "PATCH" });
+}
+
+/** Diagnostic Tool: Health Check */
+export async function healthCheck() {
+  try {
+    const res = await fetch("https://digi-sahaay-backend.onrender.com/");
+    console.log("Health Check Status:", res.status);
+    const text = await res.text();
+    console.log("Health Check Response:", text);
+    return res.status;
+  } catch (err) {
+    console.error("Health Check Error:", err);
+  }
 }

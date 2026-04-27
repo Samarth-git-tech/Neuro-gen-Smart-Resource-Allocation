@@ -10,14 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
 from routes import auth, users, tasks, inputs, stats, ai
 
-origins = [
-    "http://localhost:5173",
-    "https://digi-sahaay.vercel.app",
-]
-frontend_url = os.getenv("FRONTEND_URL")
-if frontend_url:
-    origins.append(frontend_url.rstrip("/"))
-
 # Configure logging for startup events
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,7 +33,7 @@ origins = [
     "http://localhost:5174",
 ]
 if frontend_url:
-    origins.append(frontend_url)
+    origins.append(frontend_url.rstrip("/"))
 
 app.add_middleware(
     CORSMiddleware,
