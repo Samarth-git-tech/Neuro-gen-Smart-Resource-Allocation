@@ -9,16 +9,10 @@ class UserCreate(BaseModel):
     name: str
     email: str
     mobile: Optional[str] = None
-    password: str
     role: str                          # "admin", "volunteer", "helper"
     skills: Optional[str] = None
     availability: Optional[str] = None
     location: Optional[str] = None     # NEW: city/area
-
-
-class UserLogin(BaseModel):
-    email: str
-    password: str
 
 
 class UserOut(BaseModel):

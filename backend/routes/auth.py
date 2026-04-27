@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import get_db
 from models import User
-from schemas import UserCreate, UserLogin, UserOut
+from schemas import UserCreate, UserOut
 
 import firebase_config
 from firebase_admin import auth as firebase_auth
@@ -19,16 +19,20 @@ class VerifyResponse(BaseModel):
 
 def get_verified_email(authorization: str) -> str:
     """Helper to verify token and extract email"""
+    print(f"DEBUG AUTH HEADER (get_verified_email): {authorization}")
     user_info = get_user_info_from_token(authorization)
-    return user_info["email"].strip().lower()
+    email = user_info.get("email")
+    if not email:
+        raise HTTPException(status_code=401, detail="Token email missing")
+    return email.strip().lower()
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(user_data: UserCreate, db: Session = Depends(get_db), authorization: str = Header(None)):
+    print(f"Incoming registration body: {user_data.dict()}")
     token_email = get_verified_email(authorization)
-    email_normalized = user_data.email.strip().lower()
     
-    if token_email != email_normalized:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token email mismatch")
+    # Strictly enforce identity through Firebase, completely ignoring frontend email matching.
+    email_normalized = token_email
 
     try:
         existing = db.query(User).filter(User.email == email_normalized).first()
@@ -43,12 +47,18 @@ def register(user_data: UserCreate, db: Session = Depends(get_db), authorization
             mobile=user_data.mobile,
             skills=user_data.skills,
             availability=user_data.availability,
-            password="",  # bcrypt logic removed, schema compatible
-            role=user_data.role
+            role=user_data.role,
+            location=user_data.location  # Fixed DB insert to include location
         )
         db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
+        try:
+            db.commit()
+            db.refresh(new_user)
+        except Exception as e:
+            db.rollback()
+            print(f"DB Insert Error on register: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Database error during registration: {str(e)}")
+            
         return new_user
     except HTTPException:
         raise
@@ -70,11 +80,15 @@ def login(db: Session = Depends(get_db), authorization: str = Header(None)):
         email_normalized = email.strip().lower()
         print(f"Token verified. Looking up user: {email_normalized}")
 
-        # Step 2: Lookup user in database
-        user = db.query(User).filter(User.email == email_normalized).first()
+        # Step 2: Lookup user in database with try-except to catch 500 error root cause
+        try:
+            user = db.query(User).filter(User.email == email_normalized).first()
+        except Exception as e:
+            print(f"DB Query Error in login: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Database schema or query error: {str(e)}")
 
         if not user:
-            print("User not found in DB")
+            print(f"User not found in DB for email: {email_normalized}")
             raise HTTPException(status_code=404, detail="User not found in system")
 
         print(f"User found: ID={user.id}")
@@ -83,8 +97,10 @@ def login(db: Session = Depends(get_db), authorization: str = Header(None)):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Login error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        print(f"Login unexpected python error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 # ── POST /auth/verify ──────────────────────────────────────────────────────────

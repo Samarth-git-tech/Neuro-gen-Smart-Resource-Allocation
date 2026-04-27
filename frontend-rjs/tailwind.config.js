@@ -7,8 +7,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Lato", "sans-serif"],
-        nunito: ["Nunito", "sans-serif"],
+        sans: ["lato", "sans-serif"],
+        nunito: ["nunito", "sans-serif"],
       },
       animation: {
         "fade-in": "fadeIn 0.3s ease",

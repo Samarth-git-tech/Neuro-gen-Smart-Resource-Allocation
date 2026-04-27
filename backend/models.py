@@ -11,7 +11,6 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     mobile = Column(String, nullable=True)
-    password = Column(String, nullable=False)
     role = Column(String, nullable=False)         # "admin", "volunteer", "helper"
     skills = Column(String, nullable=True)
     availability = Column(String, nullable=True)

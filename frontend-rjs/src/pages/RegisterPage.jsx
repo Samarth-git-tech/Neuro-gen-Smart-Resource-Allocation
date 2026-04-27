@@ -8,14 +8,10 @@ import Toast from "../components/Toast";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { setRole: setContextRole, isAuthenticated } = useAuth();
-
-  // Already logged in — skip registration entirely
-  if (isAuthenticated && !loading) return <Navigate to="/dashboard" replace />;
+  const { setRole: setContextRole, isAuthenticated, loading: authLoading } = useAuth();
 
   const [step, setStep] = useState(1);
   const [role, setRole] = useState(null);
-  
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -29,6 +25,9 @@ export default function RegisterPage() {
     skills: "",
     availability: "Available"
   });
+
+  // Already logged in — skip registration entirely
+  if (isAuthenticated && !authLoading) return <Navigate to="/dashboard" replace />;
 
   const handleChange = (field) => (e) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
@@ -73,6 +72,7 @@ export default function RegisterPage() {
           role: role.toLowerCase(),
           skills: formData.skills,
           availability: formData.availability,
+          location: formData.city
         }),
       });
 

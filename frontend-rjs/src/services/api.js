@@ -1,13 +1,27 @@
 import { auth } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
-const API_BASE = "http://localhost:8000";
+// Helper to wait for the auth state to initialize
+const getAuthUser = () => {
+  return new Promise((resolve, reject) => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        unsubscribe();
+        resolve(user);
+      },
+      reject
+    );
+  });
+};
 
 export async function apiRequest(endpoint, options = {}) {
-  const user = auth.currentUser;
+  const user = await getAuthUser();
   let token = null;
 
   if (user) {
-    token = await user.getIdToken();
+    token = await user.getIdToken(true);
   }
 
   const headers = {

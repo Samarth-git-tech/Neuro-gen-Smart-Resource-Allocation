@@ -7,7 +7,7 @@ import Toast from "../components/Toast";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { isAuthenticated, setRole } = useAuth();
+  const { isAuthenticated, setRole, loading: authLoading } = useAuth();
 
   const [selectedRole, setSelectedRole] = useState("volunteer");
   const [email, setEmail]       = useState("");
@@ -17,7 +17,7 @@ export default function LoginPage() {
 
   // ── Already logged in — skip the login page entirely ──
   // Only redirect if NOT in the middle of a login call
-  if (isAuthenticated && !loading) {
+  if (isAuthenticated && !authLoading) {
     return <Navigate to="/dashboard" replace />;
   }
 

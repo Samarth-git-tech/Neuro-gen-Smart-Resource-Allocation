@@ -33,7 +33,6 @@ from ._common import get_value_by_path as getv
 from ._common import set_value_by_path as setv
 from .pagers import AsyncPager, Pager
 
-
 logger = logging.getLogger('google_genai.models')
 
 
@@ -767,6 +766,14 @@ def _EmbedContentConfig_to_mldev(
   if getv(from_object, ['auto_truncate']) is not None:
     raise ValueError('auto_truncate parameter is not supported in Gemini API.')
 
+  if getv(from_object, ['document_ocr']) is not None:
+    raise ValueError('document_ocr parameter is not supported in Gemini API.')
+
+  if getv(from_object, ['audio_track_extraction']) is not None:
+    raise ValueError(
+        'audio_track_extraction parameter is not supported in Gemini API.'
+    )
+
   return to_object
 
 
@@ -789,7 +796,11 @@ def _EmbedContentConfig_to_vertex(
       )
   elif discriminator == 'EMBED_CONTENT':
     if getv(from_object, ['task_type']) is not None:
-      setv(parent_object, ['taskType'], getv(from_object, ['task_type']))
+      setv(
+          parent_object,
+          ['embedContentConfig', 'taskType'],
+          getv(from_object, ['task_type']),
+      )
 
   discriminator = getv(root_object, ['embedding_api_type'])
   if discriminator is None:
@@ -801,7 +812,11 @@ def _EmbedContentConfig_to_vertex(
       )
   elif discriminator == 'EMBED_CONTENT':
     if getv(from_object, ['title']) is not None:
-      setv(parent_object, ['title'], getv(from_object, ['title']))
+      setv(
+          parent_object,
+          ['embedContentConfig', 'title'],
+          getv(from_object, ['title']),
+      )
 
   discriminator = getv(root_object, ['embedding_api_type'])
   if discriminator is None:
@@ -817,7 +832,7 @@ def _EmbedContentConfig_to_vertex(
     if getv(from_object, ['output_dimensionality']) is not None:
       setv(
           parent_object,
-          ['outputDimensionality'],
+          ['embedContentConfig', 'outputDimensionality'],
           getv(from_object, ['output_dimensionality']),
       )
 
@@ -845,7 +860,31 @@ def _EmbedContentConfig_to_vertex(
   elif discriminator == 'EMBED_CONTENT':
     if getv(from_object, ['auto_truncate']) is not None:
       setv(
-          parent_object, ['autoTruncate'], getv(from_object, ['auto_truncate'])
+          parent_object,
+          ['embedContentConfig', 'autoTruncate'],
+          getv(from_object, ['auto_truncate']),
+      )
+
+  discriminator = getv(root_object, ['embedding_api_type'])
+  if discriminator is None:
+    discriminator = 'PREDICT'
+  if discriminator == 'EMBED_CONTENT':
+    if getv(from_object, ['document_ocr']) is not None:
+      setv(
+          parent_object,
+          ['embedContentConfig', 'documentOcr'],
+          getv(from_object, ['document_ocr']),
+      )
+
+  discriminator = getv(root_object, ['embedding_api_type'])
+  if discriminator is None:
+    discriminator = 'PREDICT'
+  if discriminator == 'EMBED_CONTENT':
+    if getv(from_object, ['audio_track_extraction']) is not None:
+      setv(
+          parent_object,
+          ['embedContentConfig', 'audioTrackExtraction'],
+          getv(from_object, ['audio_track_extraction']),
       )
 
   return to_object
@@ -2115,6 +2154,11 @@ def _GenerateVideosConfig_to_mldev(
   if getv(from_object, ['labels']) is not None:
     raise ValueError('labels parameter is not supported in Gemini API.')
 
+  if getv(from_object, ['webhook_config']) is not None:
+    setv(
+        parent_object, ['webhookConfig'], getv(from_object, ['webhook_config'])
+    )
+
   return to_object
 
 
@@ -2240,6 +2284,9 @@ def _GenerateVideosConfig_to_vertex(
 
   if getv(from_object, ['labels']) is not None:
     setv(parent_object, ['labels'], getv(from_object, ['labels']))
+
+  if getv(from_object, ['webhook_config']) is not None:
+    raise ValueError('webhook_config parameter is not supported in Vertex AI.')
 
   return to_object
 

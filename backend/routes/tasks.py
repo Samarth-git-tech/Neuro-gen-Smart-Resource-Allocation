@@ -33,13 +33,14 @@ def _require_admin(authorization: str = Header(None), db: Session = Depends(get_
 
 # ── Deadline helpers ──
 DEADLINE_DELTA = {
+    "urgent": datetime.timedelta(hours=1),
     "high":   datetime.timedelta(hours=2),
     "medium": datetime.timedelta(hours=6),
     "low":    datetime.timedelta(hours=24),
 }
 
 def compute_deadline(priority: str) -> datetime.datetime:
-    delta = DEADLINE_DELTA.get((priority or "medium").lower(), datetime.timedelta(hours=6))
+    delta = DEADLINE_DELTA.get((priority or "MEDIUM").lower(), datetime.timedelta(hours=6))
     return datetime.datetime.utcnow() + delta
 
 
@@ -89,7 +90,7 @@ def create_task(
     # Auto-set deadline from priority
     deadline = compute_deadline(priority)
     # Emergency flag for high priority
-    is_emergency = "true" if priority == "high" else "false"
+    is_emergency = "true" if priority.lower() in ["urgent", "high"] else "false"
 
     new_task = Task(
         title=data.title,
@@ -277,7 +278,7 @@ def update_priority(
     
     task.priority = data.priority
     task.deadline = compute_deadline(data.priority)
-    task.is_emergency = "true" if data.priority.lower() == "high" else "false"
+    task.is_emergency = "true" if data.priority.lower() in ["urgent", "high"] else "false"
     
     # Consider if reassign is needed here, but let's keep it strictly priority update
     db.commit()
