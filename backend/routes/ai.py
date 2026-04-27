@@ -10,7 +10,7 @@ import json
 from services.ai_service import analyze_task
 from services.firebase import get_user_info_from_token
 
-router = APIRouter(prefix="/api", tags=["AI Processing"])
+router = APIRouter(prefix="/api/ai-process")
 
 
 def _get_opt_user(authorization: str = Header(None)):
