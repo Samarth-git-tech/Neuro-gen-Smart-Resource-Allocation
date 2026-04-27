@@ -1,6 +1,6 @@
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE = "https://digi-sahaay-backend.onrender.com";
 
 // Helper to wait for the auth state to initialize
 const getAuthUser = () => {
