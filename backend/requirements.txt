@@ -1,6 +1,11 @@
-fastapi==0.136.1
-firebase_admin==7.4.0
-protobuf==7.34.1
-pydantic==2.13.3
-python-dotenv==1.2.2
-SQLAlchemy==2.0.49
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+firebase-admin
+google-genai
+sqlalchemy
+psycopg2-binary
+pydantic
+pydantic-settings
+watchfiles
