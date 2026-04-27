@@ -13,8 +13,10 @@ from routes import auth, users, tasks, inputs, stats, ai
 origins = [
     "http://localhost:5173",
     "https://digi-sahaay.vercel.app",
-    os.getenv("FRONTEND_URL") 
 ]
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    origins.append(frontend_url.rstrip("/"))
 
 # Configure logging for startup events
 logging.basicConfig(level=logging.INFO)
