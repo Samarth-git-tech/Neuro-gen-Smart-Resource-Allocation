@@ -1,6 +1,9 @@
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
+// src/services/api.js
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+
 
 
 // Helper to wait for the auth state to initialize
@@ -31,7 +34,7 @@ export async function apiRequest(endpoint, options = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers,
   });
@@ -54,6 +57,7 @@ export async function fetchMyTasks(userId) {
   const all = await apiRequest("/api/tasks");
   return all.filter((t) => t.assigned_to_id === userId);
 }
+
 
 /** Update task status */
 export async function updateTaskStatus(taskId, newStatus) {
