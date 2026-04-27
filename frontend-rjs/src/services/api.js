@@ -1,6 +1,6 @@
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-const API_BASE = "https://digi-sahaay-backend.onrender.com";
+const API_BASE_URL = "https://digi-sahaay-backend.onrender.com";
 
 // Helper to wait for the auth state to initialize
 const getAuthUser = () => {
@@ -30,7 +30,7 @@ export async function apiRequest(endpoint, options = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
   });
