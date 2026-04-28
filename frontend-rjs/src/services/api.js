@@ -5,7 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
  * Ensure your Vercel Environment Variable VITE_API_BASE_URL 
  * is set to: https://neuro-gen-smart-resource-allocation-production.up.railway.app
  */
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE = "https://neuro-gen-smart-resource-allocation-production.up.railway.app";
 
 // Helper to wait for the auth state to initialize
 const getAuthUser = () => {
