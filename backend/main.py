@@ -27,14 +27,26 @@ app = FastAPI(
 )
 
 # ── CORS Middleware ──
+# Add every Vercel domain variant for this project.
+# On Railway, set FRONTEND_URL to your exact Vercel production URL to
+# avoid editing this file for each new deployment.
 frontend_url = os.getenv("FRONTEND_URL")
 origins = [
+    # ── Local development ──
     "http://localhost:5173",
-    "https://digi-sahaay.vercel.app", 
-    "https://digi-sahaay-jaiswals-projects.vercel.app", # Add your specific project subdomain
+    "http://localhost:3000",
+    # ── Neuro-gen / Digi-Sahaay Vercel domains ──
+    "https://neuro-gen-smart-resource-allocation.vercel.app",
+    "https://neuro-gen-smart-resource-allocation-git-main-jaiswals-projects.vercel.app",
+    "https://neuro-gen-smart-resource-allocation-jaiswals-projects.vercel.app",
+    "https://digi-sahaay.vercel.app",
+    "https://digi-sahaay-jaiswals-projects.vercel.app",
 ]
 if frontend_url:
-    origins.append(frontend_url.rstrip("/"))
+    cleaned = frontend_url.rstrip("/")
+    if cleaned not in origins:
+        origins.append(cleaned)
+        logger.info(f"CORS: added dynamic origin from env → {cleaned}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,6 +59,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     logger.info("Startup complete: System online.")
+    logger.info(f"CORS allowed origins: {origins}")
 
 # ── Register Routers ──
 # Prefixing all routes with "/api" for standard API structure

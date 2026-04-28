@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import Toast from "../components/Toast";
+import { API_BASE } from "../services/api";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ export default function LoginPage() {
       const token = await userCredential.user.getIdToken();
 
       // Step 2: Verify against backend + get real DB role
-      const response = await fetch("http://localhost:8000/api/auth/login", {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });

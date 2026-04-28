@@ -1,11 +1,13 @@
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
-/** * ── CONFIGURATION ──
- * Ensure your Vercel Environment Variable VITE_API_BASE_URL 
- * is set to: https://neuro-gen-smart-resource-allocation-production.up.railway.app
- */
-const API_BASE = "https://neuro-gen-smart-resource-allocation-production.up.railway.app";
+// ── CONFIGURATION ──
+// Read from Vite env var; falls back to Railway URL if the variable is missing.
+// Local dev: set VITE_API_BASE_URL=http://localhost:8000 in frontend-rjs/.env
+// Production: set VITE_API_BASE_URL=https://neuro-gen-smart-resource-allocation-production.up.railway.app in Vercel dashboard
+export const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://neuro-gen-smart-resource-allocation-production.up.railway.app";
 
 // Helper to wait for the auth state to initialize
 const getAuthUser = () => {

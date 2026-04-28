@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { onAuthChange, logoutUser } from "../services/auth";
 import { auth } from "../firebase";
+import { API_BASE } from "../services/api";
 
 
 const AuthContext = createContext(null);
@@ -20,7 +21,7 @@ export function AuthProvider({ children }) {
         try {
           const token = await firebaseUser.getIdToken(true);
 
-          const res = await fetch("http://localhost:8000/api/auth/login", {
+          const res = await fetch(`${API_BASE}/api/auth/login`, {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
           });

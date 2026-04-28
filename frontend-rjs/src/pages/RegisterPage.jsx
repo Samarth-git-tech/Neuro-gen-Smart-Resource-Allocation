@@ -5,6 +5,7 @@ import { auth } from "../firebase";
 import { ROLES, CATEGORIES, CITIES, capitalize } from "../utils/helpers";
 import { useAuth } from "../context/AuthContext";
 import Toast from "../components/Toast";
+import { API_BASE } from "../services/api";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -59,7 +60,7 @@ export default function RegisterPage() {
       const token = await userCredential.user.getIdToken();
 
       // Step 3: Send user data to backend with Authorization header
-      const response = await fetch("http://localhost:8000/api/auth/register", {
+      const response = await fetch(`${API_BASE}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
