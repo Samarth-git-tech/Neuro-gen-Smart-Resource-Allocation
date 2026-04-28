@@ -1,10 +1,11 @@
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-// src/services/api.js
+
+/** * ── CONFIGURATION ──
+ * Ensure your Vercel Environment Variable VITE_API_BASE_URL 
+ * is set to: https://neuro-gen-smart-resource-allocation-production.up.railway.app
+ */
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-
-
-
 
 // Helper to wait for the auth state to initialize
 const getAuthUser = () => {
@@ -20,11 +21,15 @@ const getAuthUser = () => {
   });
 };
 
+/**
+ * Global API Request Wrapper
+ */
 export async function apiRequest(endpoint, options = {}) {
   const user = await getAuthUser();
   let token = null;
 
   if (user) {
+    // We force refresh the token to ensure Railway receives a valid JWT
     token = await user.getIdToken(true);
   }
 
@@ -34,49 +39,65 @@ export async function apiRequest(endpoint, options = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `API Error: ${response.status}`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      // Standardize error reporting
+      throw {
+        status: response.status,
+        message: errorData.detail || `API Error: ${response.status}`,
+      };
+    }
+
+    return response.json();
+  } catch (err) {
+    console.error(`Fetch Error at ${endpoint}:`, err);
+    throw err;
   }
-
-  return response.json();
 }
 
-/** Fetch all tasks */
+// ── AUTH & PROFILE ──
+
+export async function fetchMyProfile() {
+  // Uses POST /login to lookup user by the Bearer token
+  return apiRequest("/api/auth/login", { method: "POST" });
+}
+
+export async function registerUser(userData) {
+  return apiRequest("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify(userData),
+  });
+}
+
+// ── TASKS ──
+
 export async function fetchAllTasks() {
   return apiRequest("/api/tasks");
 }
 
-/** Fetch tasks assigned to logged-in user */
 export async function fetchMyTasks(userId) {
   const all = await apiRequest("/api/tasks");
   return all.filter((t) => t.assigned_to_id === userId);
 }
 
-
-/** Update task status */
 export async function updateTaskStatus(taskId, newStatus) {
   return apiRequest(`/api/tasks/${taskId}/status?new_status=${newStatus}`, {
     method: "PATCH",
   });
 }
 
-/** Get logged-in user profile */
-export async function fetchMyProfile() {
-  return apiRequest("/api/auth/login", { method: "POST" }); // backend uses token
-}
+// ── ADMIN ACTIONS ──
 
-/** Admin Action: Force AI Reassignment */
 export async function reassignTask(taskId) {
   return apiRequest(`/api/tasks/${taskId}/reassign`, { method: "PATCH" });
 }
 
-/** Admin Action: Update Priority */
 export async function updateTaskPriority(taskId, priority) {
   return apiRequest(`/api/tasks/${taskId}/priority`, {
     method: "PATCH",
@@ -84,20 +105,23 @@ export async function updateTaskPriority(taskId, priority) {
   });
 }
 
-/** Admin Action: Force Assign specific user */
 export async function forceAssignUser(taskId, userId) {
   return apiRequest(`/api/tasks/${taskId}/force-assign/${userId}`, { method: "PATCH" });
 }
 
-/** Diagnostic Tool: Health Check */
+// ── DIAGNOSTICS ──
+
+/** Updated for Railway */
 export async function healthCheck() {
   try {
-    const res = await fetch("https://digi-sahaay-backend.onrender.com/");
-    console.log("Health Check Status:", res.status);
-    const text = await res.text();
-    console.log("Health Check Response:", text);
+    // Always check the current API_BASE instead of a hardcoded string
+    const res = await fetch(`${API_BASE}/`);
+    console.log("Railway Health Status:", res.status);
+    const data = await res.json();
+    console.log("Railway Response:", data);
     return res.status;
   } catch (err) {
-    console.error("Health Check Error:", err);
+    console.error("Railway Connection Failed:", err);
+    return null;
   }
 }
