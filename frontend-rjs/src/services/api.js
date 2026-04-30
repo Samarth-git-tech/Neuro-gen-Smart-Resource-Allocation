@@ -5,19 +5,24 @@ import { onAuthStateChanged } from "firebase/auth";
 // Read from Vite env var; falls back to Railway URL if the variable is missing.
 // Local dev: set VITE_API_BASE_URL=http://localhost:8000 in frontend-rjs/.env
 // Production: set VITE_API_BASE_URL=https://neuro-gen-smart-resource-allocation-production.up.railway.app in Vercel dashboard
-const _rawBase =
+const _rawBase = (
   import.meta.env.VITE_API_BASE_URL ||
-  "https://neuro-gen-smart-resource-allocation-production.up.railway.app";
+  "https://neuro-gen-smart-resource-allocation-production.up.railway.app"
+).replace(/\/$/, ""); // strip trailing slash first
 
-// Guard: ensure the URL is always absolute (has a protocol) and has no trailing slash.
-// If VITE_API_BASE_URL is set without https:// on the Vercel dashboard, the browser
-// would treat it as a relative path and prepend the Vercel origin, producing a broken
-// double-domain URL like: https://digi-sahaay.vercel.app/railway.app/api/auth/login
-const _withProtocol =
-  _rawBase.startsWith("http://") || _rawBase.startsWith("https://")
-    ? _rawBase
-    : `https://${_rawBase}`;
-export const API_BASE = _withProtocol.replace(/\/$/, "");
+// ── URL Safety Guard ──
+// 1. No protocol → prepend https://
+// 2. http:// on non-localhost → upgrade to https:// (prevents Mixed Content block)
+// 3. localhost stays on http (no TLS cert locally)
+const _isLocalhost =
+  _rawBase.includes("localhost") || _rawBase.includes("127.0.0.1");
+
+export const API_BASE = (() => {
+  if (_rawBase.startsWith("https://")) return _rawBase;
+  if (_rawBase.startsWith("http://") && _isLocalhost) return _rawBase;
+  if (_rawBase.startsWith("http://")) return _rawBase.replace("http://", "https://");
+  return `https://${_rawBase}`;
+})();
 
 console.log("[api.js] API_BASE resolved to:", API_BASE);
 
