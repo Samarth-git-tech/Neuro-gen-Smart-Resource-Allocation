@@ -48,12 +48,15 @@ if frontend_url:
         origins.append(cleaned)
         logger.info(f"CORS: added dynamic origin from env → {cleaned}")
 
+from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,
 )
 
 @app.on_event("startup")
