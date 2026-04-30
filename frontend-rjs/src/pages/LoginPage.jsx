@@ -35,7 +35,10 @@ export default function LoginPage() {
       // Step 2: Verify against backend + get real DB role
       const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {

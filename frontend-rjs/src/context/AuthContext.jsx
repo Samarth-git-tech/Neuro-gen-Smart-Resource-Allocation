@@ -23,7 +23,10 @@ export function AuthProvider({ children }) {
 
           const res = await fetch(`${API_BASE}/api/auth/login`, {
             method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
           });
 
           if (!res.ok) {
